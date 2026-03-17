@@ -37,10 +37,12 @@ export default function Layout() {
               <li key={path}>
                 <NavLink
                   to={path}
+                  end={path === "."}
                   className={({ isActive }) =>
-                    `flex items-center px-2 py-1.5 rounded-base transition-colors group ${isActive
-                      ? "bg-blue-50 text-blue-600 font-semibold"
-                      : "text-body hover:bg-neutral-tertiary hover:text-fg-brand"
+                    `flex items-center px-2 py-1.5 rounded-base transition-colors group ${
+                      isActive
+                        ? "bg-blue-50 text-blue-600 font-semibold"
+                        : "text-body hover:bg-neutral-tertiary hover:text-fg-brand"
                     }`
                   }
                 >

@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Ik9tbmlhbXNhbGFtYTI1QGdtYWlsLmNvbSIsIm5hbWUiOiJPbW5pYSBTYWxhbWEiLCJpZCI6IjY5YjVjNDI1MjUwZGIwNzk0YWU1NDllMiIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzczNTM2NzM3fQ.x6QinFFi4ovrxYVKEQzptSySJFEydWKcE3XdsWSp0Gs";
 const API = "https://nti-ecommerce.vercel.app/api/v1/subcategories";
 const CATEGORIES_API = "https://nti-ecommerce.vercel.app/api/v1/categories";
 
 export default function SubCategories() {
-  const TOKEN = localStorage.getItem("userToken");
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -93,7 +94,7 @@ export default function SubCategories() {
     try {
       await axios.post(
         API,
-        { name: subCategoryName, category: selectedCategory }, 
+        { name: subCategoryName, category: selectedCategory }, // ✅ plain JSON
         { headers: { token: TOKEN } },
       );
 
