@@ -51,10 +51,9 @@ export default function Register() {
         name: values.name,
         email: values.email,
         password: values.password,
-        // لا نرسل rePassword هنا لأن الـ API يرفضه
       });
       if (data.token || data.message === "success") {
-        localStorage.setItem("userToken", data.token); // توحيد اسم المفتاح ليكون userToken
+        localStorage.setItem("userToken", data.token); 
         navigate("/dashboard");
       }
     } catch (err) {
