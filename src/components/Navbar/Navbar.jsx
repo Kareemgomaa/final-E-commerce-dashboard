@@ -41,7 +41,6 @@ export default function Navbar() {
                 </svg>
               </div>
             </button>
-            {/* Dropdown menu */}
             <div
               className="z-50 hidden bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-44"
               id="user-dropdown"

@@ -1,3 +1,5 @@
+/** @format */
+
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +17,11 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  let { handleSubmit, register, formState: { errors } } = useForm({
+  let {
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
       email: "",
       password: "",
@@ -27,11 +33,18 @@ export default function Login() {
     setIsLoading(true);
     setApiError("");
     try {
-      let { data } = await axios.post(`https://nti-ecommerce.vercel.app/api/v1/auth/signIn`, values);
+      let { data } = await axios.post(
+        "https://nti-ecommerce.vercel.app/api/v1/auth/signIn",
+        values,
+      );
 
-      if (data.message === "success" || data.token) {
+      console.log("Login response:", data); 
+
+      if (data.token) {
         localStorage.setItem("userToken", data.token);
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
+      } else {
+        setApiError(data.message || "Invalid email or password.");
       }
     } catch (err) {
       setApiError(err.response?.data?.message || "Invalid email or password.");
@@ -47,10 +60,22 @@ export default function Login() {
           <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white text-center">
             Sign in to your account
           </h1>
-          {apiError && <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400">{apiError}</div>}
-          <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit(handleLogin)}>
+          {apiError && (
+            <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400">
+              {apiError}
+            </div>
+          )}
+          <form
+            className="space-y-4 md:space-y-6"
+            onSubmit={handleSubmit(handleLogin)}
+          >
             <div>
-              <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
+              <label
+                htmlFor="email"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >
+                Your email
+              </label>
               <input
                 {...register("email")}
                 type="email"
@@ -58,10 +83,19 @@ export default function Login() {
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="name@company.com"
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
             <div>
-              <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+              <label
+                htmlFor="password"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >
+                Password
+              </label>
               <input
                 {...register("password")}
                 type="password"
@@ -69,7 +103,11 @@ export default function Login() {
                 placeholder="••••••••"
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-600 focus:border-blue-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
             <button
               disabled={isLoading}
@@ -80,7 +118,10 @@ export default function Login() {
             </button>
             <p className="text-sm font-light text-gray-500 dark:text-gray-400">
               Don’t have an account yet?{" "}
-              <Link to="/register" className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+              <Link
+                to="/register"
+                className="font-medium text-blue-600 hover:underline dark:text-blue-500"
+              >
                 Sign up
               </Link>
             </p>
