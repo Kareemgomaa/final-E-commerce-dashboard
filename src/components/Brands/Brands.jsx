@@ -122,7 +122,6 @@ export default function Brands() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Brands</h1>
@@ -141,7 +140,6 @@ export default function Brands() {
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500 tracking-wider">

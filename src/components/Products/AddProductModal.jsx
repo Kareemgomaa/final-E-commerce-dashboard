@@ -89,7 +89,6 @@ export default function AddProductModal({ onClose, onSuccess, editingProduct }) 
             const fetchSubCategories = async () => {
                 try {
                     const { data } = await axios.get(`https://nti-ecommerce.vercel.app/api/v1/categories/${selectedCategory}/subcategories`);
-                    // API has inconsistent response keys. Trying common patterns.
                     const subCategoryList = data.data || data.subcategories || data.subCategories || data.categories || (Array.isArray(data) ? data : []);
                     setSubCategories(subCategoryList);
                 } catch (error) {

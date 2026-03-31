@@ -15,8 +15,6 @@ export default function SubCategories() {
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [subCategoryName, setSubCategoryName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [subCategoryImage, setSubCategoryImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -64,19 +62,14 @@ export default function SubCategories() {
     getCategories();
   }, []);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    setSubCategoryImage(file);
-    if (file) setImagePreview(URL.createObjectURL(file));
-  };
+
 
   const resetModal = () => {
     setShowModal(false);
     setEditingSubCategory(null);
     setSubCategoryName("");
     setSelectedCategory("");
-    setSubCategoryImage(null);
-    setImagePreview(null);
+
     setError("");
   };
   const addSubCategory = async () => {
@@ -94,7 +87,7 @@ export default function SubCategories() {
     try {
       await axios.post(
         API,
-        { name: subCategoryName, category: selectedCategory }, // ✅ plain JSON
+        { name: subCategoryName, category: selectedCategory }, 
         { headers: { token: TOKEN } },
       );
 
@@ -132,8 +125,7 @@ export default function SubCategories() {
     setEditingSubCategory(sub);
     setSubCategoryName(sub.name);
     setSelectedCategory(sub.category?._id || sub.category || "");
-    setSubCategoryImage(null);
-    setImagePreview(sub.image || null);
+
     setError("");
     setShowModal(true);
   };
@@ -154,7 +146,6 @@ export default function SubCategories() {
       const formData = new FormData();
       formData.append("name", subCategoryName);
       formData.append("category", selectedCategory);
-      if (subCategoryImage) formData.append("image", subCategoryImage);
 
       await axios.put(`${API}/${editingSubCategory._id}`, formData, {
         headers: {
@@ -205,12 +196,10 @@ export default function SubCategories() {
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500 tracking-wider">
             <tr>
-              <th className="px-6 py-4">Image</th>
               <th className="px-6 py-4">Name</th>
               <th className="px-6 py-4">Parent Category</th>
               <th className="px-6 py-4 text-right">Actions</th>
@@ -229,24 +218,15 @@ export default function SubCategories() {
                 key={sub._id}
                 className="bg-white hover:bg-gray-50 transition-colors"
               >
-                <td className="px-6 py-4">
-                  {sub.image ? (
-                    <img
-                      src={sub.image}
-                      alt={sub.name}
-                      className="w-14 h-14 object-cover rounded-xl border border-gray-100 shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 bg-gray-100 flex items-center justify-center rounded-xl text-gray-400 text-xs">
-                      No img
-                    </div>
-                  )}
-                </td>
                 <td className="px-6 py-4 font-semibold text-gray-800">
                   {sub.name}
                 </td>
                 <td className="px-6 py-4 text-gray-500">
-                  {sub.category?.name || sub.category || "—"}
+                  {typeof sub.category === "object"
+                    ? sub.category?.name || "—"
+                    : categories.find((cat) => cat._id === sub.category)?.name ||
+                      sub.category ||
+                      "—"}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-2">
@@ -291,14 +271,12 @@ export default function SubCategories() {
               </button>
             </div>
 
-            {/* Error Banner */}
             {error && (
               <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
                 ⚠️ {error}
               </div>
             )}
 
-            {/* Name Input */}
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Sub Category Name <span className="text-red-500">*</span>
             </label>
@@ -310,7 +288,6 @@ export default function SubCategories() {
               className="w-full border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none p-2.5 rounded-xl mb-5 transition"
             />
 
-            {/* Parent Category Dropdown */}
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Parent Category <span className="text-red-500">*</span>
             </label>
@@ -327,32 +304,9 @@ export default function SubCategories() {
               ))}
             </select>
 
-            {/* Image Upload */}
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Image <span className="text-red-500">*</span>
-            </label>
-            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 rounded-xl p-4 cursor-pointer transition mb-4">
-              {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-24 h-24 object-cover rounded-xl mb-2"
-                />
-              ) : (
-                <div className="text-gray-400 text-center">
-                  <div className="text-3xl mb-1">📁</div>
-                  <div className="text-sm">Click to upload image</div>
-                </div>
-              )}
-              <input
-                type="file"
-                onChange={handleImageChange}
-                className="hidden"
-                accept="image/*"
-              />
-            </label>
+           
+          
 
-            {/* Footer Buttons */}
             <div className="flex gap-3 pt-2">
               <button
                 onClick={resetModal}

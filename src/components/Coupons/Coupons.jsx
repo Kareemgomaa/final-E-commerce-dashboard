@@ -144,7 +144,6 @@ export default function Coupons() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Coupons</h1>
@@ -167,7 +166,6 @@ export default function Coupons() {
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500 tracking-wider">
@@ -236,7 +234,6 @@ export default function Coupons() {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div
           className="fixed inset-0 bg-gray-700/80 flex items-center justify-center z-50 p-4"
@@ -245,7 +242,6 @@ export default function Coupons() {
           }}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            {/* Modal Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">
                 {editingCoupon ? " Update Coupon" : " New Coupon"}
@@ -258,14 +254,12 @@ export default function Coupons() {
               </button>
             </div>
 
-            {/* Error Banner */}
             {error && (
               <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
                 ⚠️ {error}
               </div>
             )}
 
-            {/* Code */}
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Coupon Code <span className="text-red-500">*</span>
             </label>
@@ -277,7 +271,6 @@ export default function Coupons() {
               className="w-full border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none p-2.5 rounded-xl mb-5 transition font-mono"
             />
 
-            {/* Discount */}
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Discount % <span className="text-red-500">*</span>
             </label>

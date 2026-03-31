@@ -2,44 +2,74 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Pagination from "../Pagination/Pagination";
 
-
-const API = "https://nti-ecommerce.vercel.app/api/v1/categories";
+const ITEMS_PER_PAGE = 5;
 
 export default function Categories() {
   const TOKEN = localStorage.getItem("userToken");
-  const [categories, setCategories] = useState([]);
+  const API = "https://nti-ecommerce.vercel.app/api/v1/categories";
+
+  const [allCategories, setAllCategories] = useState([]);
+  const [pageCategories, setPageCategories] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryName, setCategoryName] = useState("");
   const [categoryImage, setCategoryImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const getCategories = async () => {
+  const fetchCategories = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get(API, {
-        headers: {
-          token: TOKEN,
-        },
-      });
-      console.log("GET response:", res.data);
-      setCategories(res?.data?.categories ?? []);
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-      setCategories([]);
+      let all = [];
+      let page = 1;
+
+      while (true) {
+        const res = await axios.get(`${API}?page=${page}`, {
+          headers: { token: TOKEN },
+        });
+
+        const fetched = res?.data?.categories || [];
+        all = [...all, ...fetched];
+        if (fetched.length < ITEMS_PER_PAGE) break;
+        page += 1;
+      }
+
+      setAllCategories(all);
+      const pages = Math.ceil(all.length / ITEMS_PER_PAGE);
+      setTotalPages(pages);
+      if (currentPage > pages && pages > 0) {
+        setCurrentPage(pages);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+      setAllCategories([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    getCategories();
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    setPageCategories(allCategories.slice(startIndex, endIndex));
+  }, [allCategories, currentPage]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    setCategoryImage(file);
-    if (file) setImagePreview(URL.createObjectURL(file));
+    if (file) {
+      setCategoryImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const resetModal = () => {
@@ -51,40 +81,27 @@ export default function Categories() {
     setError("");
   };
 
-  const addCategory = async () => {
-    if (!categoryName.trim()) {
-      setError("Category name is required.");
-      return;
-    }
-    if (!categoryImage) {
-      setError("Please select an image.");
-      return;
-    }
-
+  const saveCategory = async () => {
+    if (!categoryName.trim()) return setError("Name is required.");
     setLoading(true);
     setError("");
+
     try {
       const formData = new FormData();
       formData.append("name", categoryName);
-      formData.append("image", categoryImage);
+      if (categoryImage) formData.append("image", categoryImage);
 
-      await axios.post(API, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          token: TOKEN,
-        },
+      const url = editingCategory ? `${API}/${editingCategory._id}` : API;
+      const method = editingCategory ? "put" : "post";
+
+      await axios[method](url, formData, {
+        headers: { token: TOKEN, "Content-Type": "multipart/form-data" },
       });
 
       resetModal();
-      await getCategories();
+      await fetchCategories(); 
     } catch (err) {
-      console.error("addCategory error:", err);
-      const serverErr = err?.response?.data?.err || "";
-      if (serverErr.includes("dup key")) {
-        setError("A category with this name already exists.");
-      } else {
-        setError(err?.response?.data?.message || "Failed to add category.");
-      }
+      setError(err?.response?.data?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -92,232 +109,178 @@ export default function Categories() {
 
   const deleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return;
-    try {
-      await axios.delete(`${API}/${id}`, {
-        headers: { token: TOKEN },
-      });
-      await getCategories();
-    } catch (err) {
-      console.error("deleteCategory error:", err);
-      alert(err?.response?.data?.message || "Failed to delete.");
-    }
-  };
-
-  const openEditModal = (cat) => {
-    setEditingCategory(cat);
-    setCategoryName(cat.name);
-    setCategoryImage(null);
-    setImagePreview(cat.image || null);
-    setError("");
-    setShowModal(true);
-  };
-
-  const updateCategory = async () => {
-    if (!categoryName.trim()) {
-      setError("Category name is required.");
-      return;
-    }
-
     setLoading(true);
-    setError("");
     try {
-      const formData = new FormData();
-      formData.append("name", categoryName);
-      if (categoryImage) formData.append("image", categoryImage);
-
-      await axios.put(`${API}/${editingCategory._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          token: TOKEN,
-        },
-      });
-
-      resetModal();
-      await getCategories();
+      await axios.delete(`${API}/${id}`, { headers: { token: TOKEN } });
+      await fetchCategories(); 
     } catch (err) {
-      console.error("updateCategory error:", err);
-      const serverErr = err?.response?.data?.err || "";
-      if (serverErr.includes("dup key")) {
-        setError("A category with this name already exists.");
-      } else {
-        setError(err?.response?.data?.message || "Failed to update category.");
-      }
+      alert("Failed to delete.");
     } finally {
       setLoading(false);
     }
   };
 
+  const openEditModal = (category) => {
+    setEditingCategory(category);
+    setCategoryName(category.name);
+    setImagePreview(category.image);
+    setCategoryImage(null);
+    setShowModal(true);
+    setError("");
+  };
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto min-h-screen bg-gray-50/30">
       <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Categories</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {categories?.length} categor{categories?.length === 1 ? "y" : "ies"}{" "}
-            total
-          </p>
-        </div>
+        <h1 className="text-3xl font-black text-gray-800">Categories</h1>
         <button
-          onClick={() => {
-            setEditingCategory(null);
-            setCategoryName("");
-            setCategoryImage(null);
-            setImagePreview(null);
-            setError("");
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 transition-all text-white px-5 py-2.5 rounded-xl font-medium shadow-sm"
+          onClick={() => setShowModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-green-100 transition-all active:scale-95"
         >
-          <span className="text-lg leading-none">
-            <i className="fa-solid fa-plus"></i>
-          </span>{" "}
-          Add Category
+          Add New
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500 tracking-wider">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50/50 border-b border-gray-100">
             <tr>
-              <th className="px-6 py-4">Image</th>
-              <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Image
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Name
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {categories?.length === 0 && (
+          <tbody className="divide-y divide-gray-50">
+            {loading ? (
               <tr>
-                <td colSpan={3} className="text-center py-12 text-gray-400">
-                  No categories yet. Add one!
+                <td
+                  colSpan="3"
+                  className="py-20 text-center text-gray-400 animate-pulse"
+                >
+                  Loading...
                 </td>
               </tr>
-            )}
-            {categories?.map((cat) => (
-              <tr
-                key={cat._id}
-                className="bg-white hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  {cat.image ? (
+            ) : pageCategories.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="3"
+                  className="py-20 text-center text-gray-400 font-medium"
+                >
+                  No categories found.
+                </td>
+              </tr>
+            ) : (
+              pageCategories.map((cat) => (
+                <tr
+                  key={cat._id}
+                  className="hover:bg-gray-50/50 transition-colors group"
+                >
+                  <td className="px-6 py-4">
                     <img
                       src={cat.image}
                       alt={cat.name}
-                      className="w-14 h-14 object-cover rounded-xl border border-gray-100 shadow-sm"
+                      className="w-14 h-14 rounded-xl object-cover border border-gray-100 shadow-sm"
                     />
-                  ) : (
-                    <div className="w-14 h-14 bg-gray-100 flex items-center justify-center rounded-xl text-gray-400 text-xs">
-                      No img
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 font-semibold text-gray-800">
-                  {cat.name}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex justify-end gap-2">
+                  </td>
+                  <td className="px-6 py-4 font-bold text-gray-700">
+                    {cat.name}
+                  </td>
+                  <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => openEditModal(cat)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-amber-500 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                      className="p-2.5 text-amber-500 bg-amber-50 hover:bg-amber-100 rounded-xl mr-2 transition-all"
                     >
-                      <i class="fa-solid fa-pencil"></i>Edit
+                      <i className="fa-solid fa-pencil"></i>
                     </button>
                     <button
                       onClick={() => deleteCategory(cat._id)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                      className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
                     >
-                      <i className="fa-regular fa-trash-can"></i> Delete
+                      <i className="fa-regular fa-trash-can"></i>
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalPages={totalPages}
+        />
+      )}
+
       {showModal && (
-        <div
-          className="fixed inset-0 bg-gray-500/80 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) resetModal();
-          }}
-        >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-gray-800">
-                {editingCategory ? " Update Category" : " New Category"}
-              </h2>
-              <button
-                onClick={resetModal}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-              >
-                
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl">
+            <h2 className="text-2xl font-black text-gray-800 mb-6">
+              {editingCategory ? "Update Category" : "New Category"}
+            </h2>
 
             {error && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
-                <i class="fa-solid fa-triangle-exclamation"></i> {error}
+              <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm font-bold rounded-xl border-l-4 border-red-500">
+                {error}
               </div>
             )}
 
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Category Name <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+              Name
             </label>
             <input
               type="text"
-              placeholder="e.g. Electronics"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              className="w-full border border-gray-300 focus:ring-2outline-none p-2.5 rounded-xl mb-5 transition"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 ring-green-500/20 outline-none transition-all mb-6"
+              placeholder="e.g. Electronics"
             />
 
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Category Image <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+              Image
             </label>
-            <label className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-xl p-4 cursor-pointer transition mb-4">
+            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-100 rounded-2xl cursor-pointer hover:bg-gray-50 transition-all overflow-hidden mb-8">
               {imagePreview ? (
                 <img
                   src={imagePreview}
+                  className="w-full h-full object-cover"
                   alt="Preview"
-                  className="w-24 h-24 object-cover rounded-xl mb-2"
                 />
               ) : (
-                <div className="text-gray-400 text-center">
-                  <div className="text-3xl mb-1"><i class="fa-regular fa-folder"></i></div>
-                  <div className="text-sm">Click to upload image</div>
+                <div className="text-center text-gray-400">
+                  <i className="fa-solid fa-cloud-arrow-up text-2xl mb-2"></i>
+                  <p className="text-xs font-bold">Select File</p>
                 </div>
               )}
               <input
                 type="file"
-                onChange={handleImageChange}
                 className="hidden"
+                onChange={handleImageChange}
                 accept="image/*"
               />
             </label>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3">
               <button
                 onClick={resetModal}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition"
+                className="flex-1 py-3.5 text-gray-500 font-bold bg-gray-100 hover:bg-gray-200 rounded-xl transition-all"
               >
                 Cancel
               </button>
               <button
-                onClick={editingCategory ? updateCategory : addCategory}
+                onClick={saveCategory}
                 disabled={loading}
-                className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-white transition active:scale-95 ${
-                  editingCategory
-                    ? "bg-amber-500 hover:bg-amber-700"
-                    : "bg-green-600 hover:bg-green-700"
-                } disabled:opacity-60 disabled:cursor-not-allowed`}
+                className="flex-1 py-3.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-all"
               >
-                {loading
-                  ? "Saving..."
-                  : editingCategory
-                    ? "Update"
-                    : "Add Category"}
+                {loading ? "Processing..." : "Save"}
               </button>
             </div>
           </div>
